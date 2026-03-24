@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portal de Recursos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0c0c0f;
+      --surface:  #13131a;
+      --border:   #2a2a3a;
+      --gold:     #c9a84c;
+      --gold-dim: #8a6e2e;
+      --text:     #e8e4d9;
+      --muted:    #6b6880;
+      --white:    #ffffff;
+      --error:    #e05a5a;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.35;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(ellipse at center, rgba(201,168,76,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .deco-line { position: absolute; background: var(--border); }
+    .deco-line.vert  { width: 1px; height: 100%; top: 0; }
+    .deco-line.horiz { height: 1px; width: 100%; left: 0; }
+    .deco-line.l1 { left: 12%; }
+    .deco-line.l2 { right: 12%; }
+    .deco-line.h1 { top: 10%; }
+    .deco-line.h2 { bottom: 10%; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 100px;
+      padding: 6px 18px;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 28px;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.1s forwards;
+    }
+    .badge span { width: 5px; height: 5px; background: var(--gold); border-radius: 50%; display: inline-block; }
+
+    .main-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 300;
+      line-height: 1;
+      text-align: center;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.25s forwards;
+    }
+    .main-title em { font-style: italic; color: var(--gold); }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      margin-bottom: 64px;
+      text-align: center;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.4s forwards;
+    }
+
+    .nav-strip {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      background: rgba(19,19,26,0.8);
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.55s forwards;
+    }
+
+    .nav-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 32px 48px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      border-right: 1px solid var(--border);
+      user-select: none;
+      min-width: 160px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .nav-item:last-child { border-right: none; }
+    .nav-item:hover { background: rgba(201,168,76,0.06); }
+
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gold);
+      transform: scaleX(0);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .nav-item:hover::before { transform: scaleX(1); }
+    .nav-item.active { background: rgba(201,168,76,0.1); }
+    .nav-item.active::before { transform: scaleX(1); }
+
+    .nav-icon {
+      width: 38px; height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: border-color 0.3s, background 0.3s;
+    }
+    .nav-item:hover .nav-icon {
+      border-color: var(--gold-dim);
+      background: rgba(201,168,76,0.1);
+    }
+
+    .nav-label {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.3s;
+      font-weight: 500;
+    }
+    .nav-item:hover .nav-label,
+    .nav-item.active .nav-label { color: var(--gold); }
+
+    .hint {
+      margin-top: 36px;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.75s forwards;
+    }
+    .hint strong { color: var(--gold-dim); }
+
+    /* ══════════════════════════════════
+       OVERLAY BASE
+    ══════════════════════════════════ */
+    .overlay {
+      position: fixed; inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+    .overlay.open { visibility: visible; opacity: 1; }
+
+    .overlay-bg {
+      position: absolute; inset: 0;
+      background: rgba(12,12,15,0.9);
+      backdrop-filter: blur(16px);
+      cursor: pointer;
+    }
+
+    /* ══════════════════════════════════
+       PANEL DEPARTAMENTOS
+    ══════════════════════════════════ */
+    .dept-panel {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 48px 44px;
+      width: min(720px, 95vw);
+      transform: translateY(30px) scale(0.97);
+      transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .overlay.open .dept-panel { transform: translateY(0) scale(1); }
+
+    .dept-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold-dim), var(--gold), var(--gold-dim));
+      border-radius: 8px 8px 0 0;
+    }
+
+    .dept-panel-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .dept-panel-header .icon {
+      width: 54px; height: 54px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 18px;
+      background: rgba(201,168,76,0.07);
+    }
+    .dept-panel-header h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 30px;
+      font-weight: 400;
+      margin-bottom: 6px;
+    }
+    .dept-panel-header p { font-size: 13px; color: var(--muted); }
+
+    .close-btn {
+      position: absolute;
+      top: 18px; right: 18px;
+      width: 32px; height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .close-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+    /* ── DEPT GRID ── */
+    .dept-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .dept-card {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px 18px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.3s, border-color 0.3s, transform 0.25s;
+      overflow: hidden;
+      background: rgba(255,255,255,0.02);
+    }
+    .dept-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gold);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+    .dept-card:hover {
+      background: rgba(201,168,76,0.07);
+      border-color: var(--gold-dim);
+      transform: translateY(-2px);
+    }
+    .dept-card:hover::before { transform: scaleX(1); }
+
+    .dept-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .dept-name {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ══════════════════════════════════
+       SUBMENU OVERLAY
+    ══════════════════════════════════ */
+    .sub-panel {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 48px 44px;
+      width: min(540px, 92vw);
+      transform: translateY(30px) scale(0.97);
+      transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .overlay.open .sub-panel { transform: translateY(0) scale(1); }
+
+    .sub-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold-dim), var(--gold), var(--gold-dim));
+      border-radius: 8px 8px 0 0;
+    }
+
+    .sub-panel-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .sub-panel-header h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+    .sub-panel-header p { font-size: 13px; color: var(--muted); }
+
+    .back-btn {
+      position: absolute;
+      top: 18px; left: 18px;
+      width: 32px; height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .back-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+    .sub-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .sub-option {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px 20px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.3s, border-color 0.3s, transform 0.25s;
+      background: rgba(255,255,255,0.02);
+      position: relative;
+      overflow: hidden;
+    }
+    .sub-option::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gold);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+    .sub-option:hover {
+      background: rgba(201,168,76,0.07);
+      border-color: var(--gold-dim);
+      transform: translateY(-2px);
+    }
+    .sub-option:hover::before { transform: scaleX(1); }
+
+    .sub-option-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .sub-option-label {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.3s;
+      font-weight: 500;
+    }
+    .sub-option:hover .sub-option-label { color: var(--gold); }
+
+    /* ══════════════════════════════════
+       TICKET PANEL
+    ══════════════════════════════════ */
+    .ticket-panel {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 48px 44px;
+      width: min(580px, 95vw);
+      transform: translateY(30px) scale(0.97);
+      transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .overlay.open .ticket-panel { transform: translateY(0) scale(1); }
+
+    .ticket-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #2e5a8a, #4a8fd4, #2e5a8a);
+      border-radius: 8px 8px 0 0;
+    }
+
+    .ticket-header { text-align: center; margin-bottom: 36px; }
+    .ticket-header .icon {
+      width: 54px; height: 54px;
+      border: 1px solid #2e5a8a;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 18px;
+      background: rgba(74,143,212,0.07);
+    }
+    .ticket-header h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 30px;
+      font-weight: 400;
+      margin-bottom: 6px;
+    }
+    .ticket-header p { font-size: 13px; color: var(--muted); }
+
+    /* Ticket ID badge */
+    .ticket-id-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #2e5a8a;
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #4a8fd4;
+      margin-bottom: 28px;
+    }
+    .ticket-id-badge span { width: 5px; height: 5px; background: #4a8fd4; border-radius: 50%; display: inline-block; animation: pulse 1.5s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.7)} }
+
+    /* Form */
+    .t-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .t-group { margin-bottom: 14px; }
+    .t-group label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+    .t-group input,
+    .t-group select,
+    .t-group textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.25s, background 0.25s;
+      appearance: none;
+    }
+    .t-group input::placeholder,
+    .t-group textarea::placeholder { color: var(--muted); }
+    .t-group input:focus,
+    .t-group select:focus,
+    .t-group textarea:focus {
+      border-color: #2e5a8a;
+      background: rgba(74,143,212,0.04);
+    }
+    .t-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6880' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
+    .t-group select option { background: #13131a; }
+    .t-group textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+
+    /* Priority selector */
+    .priority-group { margin-bottom: 20px; }
+    .priority-group label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .priority-options { display: flex; gap: 10px; }
+    .priority-btn {
+      flex: 1;
+      padding: 9px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .priority-btn:hover { border-color: currentColor; }
+    .priority-btn.low    { --c: #43a870; }
+    .priority-btn.medium { --c: #c9a84c; }
+    .priority-btn.high   { --c: #e05a5a; }
+    .priority-btn.selected { background: rgba(var(--cr),0.12); border-color: var(--c); color: var(--c); }
+    .priority-btn.low.selected    { --cr: 67,168,112; }
+    .priority-btn.medium.selected { --cr: 201,168,76; }
+    .priority-btn.high.selected   { --cr: 224,90,90; }
+
+    /* Attachment area */
+    .attach-area {
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.25s, background 0.25s;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .attach-area:hover { border-color: #2e5a8a; background: rgba(74,143,212,0.03); color: #4a8fd4; }
+    .attach-area span { display: block; font-size: 20px; margin-bottom: 5px; }
+
+    /* Submit */
+    .btn-ticket {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #2e5a8a, #4a8fd4);
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.25s, transform 0.2s;
+    }
+    .btn-ticket:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-ticket:active { transform: translateY(0); }
+
+    /* Success state */
+    .ticket-success {
+      display: none;
+      text-align: center;
+      padding: 20px 0 10px;
+    }
+    .ticket-success .success-icon {
+      width: 64px; height: 64px;
+      border: 2px solid #43a870;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 18px;
+      background: rgba(67,168,112,0.08);
+      animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .ticket-success h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px; font-weight: 400;
+      margin-bottom: 8px;
+    }
+    .ticket-success p { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .ticket-success .ticket-ref {
+      display: inline-block;
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      color: #4a8fd4;
+      border: 1px solid #2e5a8a;
+      border-radius: 100px;
+      padding: 5px 16px;
+      margin-top: 10px;
+    }
+    @keyframes popIn { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
+
+    /* ─── KEYFRAMES ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 640px) {
+      .nav-strip { flex-wrap: wrap; border-radius: 8px; }
+      .nav-item { min-width: 120px; padding: 24px 28px; border-right: none; border-bottom: 1px solid var(--border); }
+      .nav-item:last-child { border-bottom: none; }
+      .nav-item::before { top: auto; bottom: 0; height: 2px; }
+      .dept-grid { grid-template-columns: repeat(2, 1fr); }
+      .sub-options { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 400px) {
+      .dept-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO PAGE -->
+  <section class="hero">
+    <div class="deco-line vert l1"></div>
+    <div class="deco-line vert l2"></div>
+    <div class="deco-line horiz h1"></div>
+    <div class="deco-line horiz h2"></div>
+
+    <div class="badge"><span></span> Portal de Recursos <span></span></div>
+    <h1 class="main-title">Credit Service <em>Center</em></h1>
+    <p class="subtitle">Selecciona una opcion</p>
+
+    <nav class="nav-strip" role="navigation" aria-label="Navegación principal">
+
+      <!-- MANUAL → abre grid de departamentos -->
+      <div class="nav-item" id="btnManual" role="button" tabindex="0" aria-label="Acceder al Manual">
+        <div class="nav-icon">📘</div>
+        <span class="nav-label">Manual</span>
+      </div>
+
+      <div class="nav-item" role="button" tabindex="0" aria-label="Test">
+        <div class="nav-icon">ℹ️</div>
+        <span class="nav-label">Test</span>
+      </div>
+
+      <div class="nav-item" id="btnTicket" role="button" tabindex="0" aria-label="Ticket">
+        <div class="nav-icon">📍</div>
+        <span class="nav-label">Ticket</span>
+      </div>
+
+      <div class="nav-item" role="button" tabindex="0" aria-label="Flowchart"
+           onclick="window.location.href='flujograma.html'">
+        <div class="nav-icon">🔬</div>
+        <span class="nav-label">Flowchart</span>
+      </div>
+
+    </nav>
+
+    <p class="hint">Haz clic en <strong>Manual</strong> para ver los departamentos</p>
+  </section>
+
+  <!-- ─── OVERLAY: GRID DE DEPARTAMENTOS ─── -->
+  <div class="overlay" id="deptOverlay" role="dialog" aria-modal="true" aria-label="Departamentos">
+    <div class="overlay-bg" id="deptOverlayBg"></div>
+
+    <div class="dept-panel">
+      <button class="close-btn" id="deptCloseBtn" aria-label="Cerrar">✕</button>
+
+      <div class="dept-panel-header">
+        <div class="icon">📘</div>
+        <h2>Manual — Departamentos</h2>
+        <p>Selecciona un departamento para ver sus opciones</p>
+      </div>
+
+      <div class="dept-grid">
+        <div class="dept-card" data-dept="1">
+          <div class="dept-number">01</div>
+          <div class="dept-name">Departamento 1</div>
+        </div>
+        <div class="dept-card" data-dept="2">
+          <div class="dept-number">02</div>
+          <div class="dept-name">Departamento 2</div>
+        </div>
+        <div class="dept-card" data-dept="3">
+          <div class="dept-number">03</div>
+          <div class="dept-name">Departamento 3</div>
+        </div>
+        <div class="dept-card" data-dept="4">
+          <div class="dept-number">04</div>
+          <div class="dept-name">Departamento 4</div>
+        </div>
+        <div class="dept-card" data-dept="5">
+          <div class="dept-number">05</div>
+          <div class="dept-name">Departamento 5</div>
+        </div>
+        <div class="dept-card" data-dept="6">
+          <div class="dept-number">06</div>
+          <div class="dept-name">Departamento 6</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── OVERLAY: SUBMENÚ DE OPCIONES ─── -->
+  <div class="overlay" id="subOverlay" role="dialog" aria-modal="true" aria-label="Opciones del departamento">
+    <div class="overlay-bg" id="subOverlayBg"></div>
+
+    <div class="sub-panel">
+      <button class="back-btn" id="backBtn" aria-label="Volver">←</button>
+      <button class="close-btn" id="subCloseBtn" aria-label="Cerrar">✕</button>
+
+      <div class="sub-panel-header">
+        <h2 id="subTitle">Departamento 1</h2>
+        <p>Selecciona una opción</p>
+      </div>
+
+      <div class="sub-options">
+        <div class="sub-option" id="optPDF">
+          <span class="sub-option-icon">📄</span>
+          <span class="sub-option-label">PDF</span>
+        </div>
+        <div class="sub-option" id="optEjemplo">
+          <span class="sub-option-icon">📋</span>
+          <span class="sub-option-label">Ejemplo</span>
+        </div>
+        <div class="sub-option" id="optOpcion3">
+          <span class="sub-option-icon">⚙️</span>
+          <span class="sub-option-label">Opción 3</span>
+        </div>
+        <div class="sub-option" id="optFlowchart">
+          <span class="sub-option-icon">🔀</span>
+          <span class="sub-option-label">Flowchart</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── OVERLAY: TICKET IT ─── -->
+  <div class="overlay" id="ticketOverlay" role="dialog" aria-modal="true" aria-label="Enviar Ticket">
+    <div class="overlay-bg" id="ticketOverlayBg"></div>
+
+    <div class="ticket-panel">
+      <button class="close-btn" id="ticketCloseBtn" aria-label="Cerrar">✕</button>
+
+      <!-- FORM VIEW -->
+      <div id="ticketFormView">
+        <div class="ticket-header">
+          <div class="icon">📍</div>
+          <h2>Soporte IT</h2>
+          <p>Completa el formulario y te contactaremos</p>
+        </div>
+
+        <div style="text-align:center; margin-bottom:28px;">
+          <span class="ticket-id-badge"><span></span> Nuevo Ticket</span>
+        </div>
+
+        <div class="t-row">
+          <div class="t-group">
+            <label>Nombre</label>
+            <input type="text" placeholder="Tu nombre completo" />
+          </div>
+          <div class="t-group">
+            <label>Extensión / ID</label>
+            <input type="text" placeholder="Ej. EXT-204" />
+          </div>
+        </div>
+
+        <div class="t-row">
+          <div class="t-group">
+            <label>Departamento</label>
+            <select>
+              <option value="" disabled selected>Selecciona…</option>
+              <option>Departamento 1</option>
+              <option>Departamento 2</option>
+              <option>Departamento 3</option>
+              <option>Departamento 4</option>
+              <option>Departamento 5</option>
+              <option>Departamento 6</option>
+            </select>
+          </div>
+          <div class="t-group">
+            <label>Categoría</label>
+            <select>
+              <option value="" disabled selected>Selecciona…</option>
+              <option>Hardware</option>
+              <option>Software</option>
+              <option>Red / Conectividad</option>
+              <option>Accesos / Permisos</option>
+              <option>Correo electrónico</option>
+              <option>Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="t-group">
+          <label>Asunto</label>
+          <input type="text" placeholder="Describe brevemente el problema" />
+        </div>
+
+        <div class="t-group">
+          <label>Descripción detallada</label>
+          <textarea placeholder="¿Qué ocurrió? ¿Desde cuándo? ¿Pasos para reproducirlo?"></textarea>
+        </div>
+
+        <div class="priority-group">
+          <label>Prioridad</label>
+          <div class="priority-options">
+            <button class="priority-btn low" onclick="setPriority(this)">🟢 Baja</button>
+            <button class="priority-btn medium selected" onclick="setPriority(this)">🟡 Media</button>
+            <button class="priority-btn high" onclick="setPriority(this)">🔴 Alta</button>
+          </div>
+        </div>
+
+        <div class="attach-area" onclick="document.getElementById('fileInput').click()">
+          <span>📎</span>
+          Adjuntar archivo (captura, log, etc.)
+          <input type="file" id="fileInput" style="display:none" />
+        </div>
+
+        <button class="btn-ticket" id="submitTicketBtn">Enviar Ticket →</button>
+      </div>
+
+      <!-- SUCCESS VIEW -->
+      <div class="ticket-success" id="ticketSuccessView">
+        <div class="success-icon">✓</div>
+        <h3>¡Ticket Enviado!</h3>
+        <p>El equipo de IT recibió tu solicitud.</p>
+        <p style="color:var(--muted)">Tiempo estimado de respuesta: <strong style="color:var(--text)">2–4 horas</strong></p>
+        <div class="ticket-ref" id="ticketRefNum">TKT-#0000</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Elementos ──
+    const btnManual     = document.getElementById('btnManual');
+    const deptOverlay   = document.getElementById('deptOverlay');
+    const deptCloseBtn  = document.getElementById('deptCloseBtn');
+    const deptOverlayBg = document.getElementById('deptOverlayBg');
+    const deptCards     = document.querySelectorAll('.dept-card');
+
+    const subOverlay    = document.getElementById('subOverlay');
+    const subCloseBtn   = document.getElementById('subCloseBtn');
+    const subOverlayBg  = document.getElementById('subOverlayBg');
+    const backBtn       = document.getElementById('backBtn');
+    const subTitle      = document.getElementById('subTitle');
+
+    // ── Helpers abrir/cerrar ──
+    function openOverlay(overlay) {
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeOverlay(overlay) {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function closeAll() {
+      closeOverlay(deptOverlay);
+      closeOverlay(subOverlay);
+    }
+
+    // ── Manual → abre departamentos ──
+    btnManual.addEventListener('click', () => openOverlay(deptOverlay));
+    btnManual.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') openOverlay(deptOverlay);
+    });
+
+    // ── Cerrar departamentos ──
+    deptCloseBtn.addEventListener('click', () => closeOverlay(deptOverlay));
+    deptOverlayBg.addEventListener('click', () => closeOverlay(deptOverlay));
+
+    // ── Click en cuadrícula → abre submenú ──
+    deptCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const n = card.dataset.dept;
+        subTitle.textContent = `Departamento ${n}`;
+        closeOverlay(deptOverlay);
+        // pequeño delay para que la transición se vea limpia
+        setTimeout(() => openOverlay(subOverlay), 200);
+      });
+    });
+
+    // ── Cerrar submenú ──
+    subCloseBtn.addEventListener('click', closeAll);
+    subOverlayBg.addEventListener('click', closeAll);
+
+    // ── Botón volver ──
+    backBtn.addEventListener('click', () => {
+      closeOverlay(subOverlay);
+      setTimeout(() => openOverlay(deptOverlay), 200);
+    });
+
+    // ── Ticket overlay ──
+    const btnTicket       = document.getElementById('btnTicket');
+    const ticketOverlay   = document.getElementById('ticketOverlay');
+    const ticketCloseBtn  = document.getElementById('ticketCloseBtn');
+    const ticketOverlayBg = document.getElementById('ticketOverlayBg');
+    const submitTicketBtn = document.getElementById('submitTicketBtn');
+    const ticketFormView  = document.getElementById('ticketFormView');
+    const ticketSuccessView = document.getElementById('ticketSuccessView');
+    const ticketRefNum    = document.getElementById('ticketRefNum');
+
+    btnTicket.addEventListener('click', () => {
+      ticketFormView.style.display = 'block';
+      ticketSuccessView.style.display = 'none';
+      openOverlay(ticketOverlay);
+    });
+    ticketCloseBtn.addEventListener('click', () => closeOverlay(ticketOverlay));
+    ticketOverlayBg.addEventListener('click', () => closeOverlay(ticketOverlay));
+
+    submitTicketBtn.addEventListener('click', () => {
+      submitTicketBtn.textContent = 'Enviando…';
+      submitTicketBtn.disabled = true;
+      setTimeout(() => {
+        const ref = 'TKT-#' + Math.floor(1000 + Math.random() * 9000);
+        ticketRefNum.textContent = ref;
+        ticketFormView.style.display = 'none';
+        ticketSuccessView.style.display = 'block';
+        submitTicketBtn.textContent = 'Enviar Ticket →';
+        submitTicketBtn.disabled = false;
+      }, 1400);
+    });
+
+    function setPriority(btn) {
+      document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+
+    // ── Escape también cierra ticket ──
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (subOverlay.classList.contains('open')) closeOverlay(subOverlay);
+        else if (deptOverlay.classList.contains('open')) closeOverlay(deptOverlay);
+        else if (ticketOverlay.classList.contains('open')) closeOverlay(ticketOverlay);
+      }
+    });
+
+    // ── Acciones de las opciones del submenú (personaliza aquí) ──
+    document.getElementById('optPDF').addEventListener('click', () => {
+      alert('Abrir PDF — ' + subTitle.textContent);
+    });
+    document.getElementById('optEjemplo').addEventListener('click', () => {
+      alert('Abrir Ejemplo — ' + subTitle.textContent);
+    });
+    document.getElementById('optOpcion3').addEventListener('click', () => {
+      alert('Opción 3 — ' + subTitle.textContent);
+    });
+    document.getElementById('optFlowchart').addEventListener('click', () => {
+      window.location.href = 'flujograma.html';
+    });
+
+    // ── Ripple en otros nav items ──
+    document.querySelectorAll('.nav-item:not(#btnManual):not(#btnTicket)').forEach(item => {
+      item.addEventListener('click', () => {
+        item.classList.add('active');
+        setTimeout(() => item.classList.remove('active'), 600);
+      });
+    });
+  </script>
+</body>
+</html>
